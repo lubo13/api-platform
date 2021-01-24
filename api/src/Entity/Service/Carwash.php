@@ -14,7 +14,17 @@ use ApiPlatform\Core\Annotation\ApiResource;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * @ApiResource(shortName="ServiceCarwash")
+ * @ApiResource(
+ *     shortName="ServiceCarwash",
+ *     collectionOperations={
+ *         "post",
+ *         "get",
+ *     },
+ *     itemOperations={
+ *         "get",
+ *         "put",
+ *     }
+ *  )
  * @ORM\Entity()
  * @ORM\Table(name="service_carwash")
  */

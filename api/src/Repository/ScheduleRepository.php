@@ -2,7 +2,7 @@
 
 namespace App\Repository;
 
-use App\Entity\Schedule;
+use App\Entity\Schedule\Schedule;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 

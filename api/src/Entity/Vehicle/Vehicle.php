@@ -2,7 +2,10 @@
 
 namespace App\Entity\Vehicle;
 
+use App\Entity\Schedule\Schedule;
 use App\Repository\VehicleRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Mapping\DiscriminatorColumn;
 use Doctrine\ORM\Mapping\DiscriminatorMap;
@@ -35,6 +38,16 @@ abstract class Vehicle
      */
     private string $model;
 
+    /**
+     * @ORM\OneToMany(targetEntity=Schedule::class, mappedBy="vehicle")
+     */
+    private Collection $schedules;
+
+    public function __construct()
+    {
+        $this->schedules = new ArrayCollection();
+    }
+
     public function getId(): ?int
     {
         return $this->id;
@@ -58,5 +71,13 @@ abstract class Vehicle
     public function setModel(string $model): void
     {
         $this->model = $model;
+    }
+
+    /**
+     * @return Collection|Schedule[]
+     */
+    public function getSchedules(): Collection
+    {
+        return $this->schedules;
     }
 }

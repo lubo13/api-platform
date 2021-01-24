@@ -29,3 +29,8 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+ 
+    App\PropertyInfo\Metadata\Property\PropertyMetadataDynamicTypeMetadataFactory:
+        decorates: 'api_platform.metadata.property.metadata_factory'
+        arguments: [ '@App\PropertyInfo\Metadata\Property\PropertyMetadataDynamicTypeMetadataFactory.inner' ]
+        decoration_priority: -9 
