@@ -41,18 +41,25 @@ if [ "$1" = 'php-fpm' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 			exit 1
 		else
 			echo "The database is now ready and reachable"
-		fi
 
-		if [ "$APP_ENV" != 'prod' ]; then
-        		php bin/console doctrine:database:drop --force --no-interaction
-        		php bin/console doctrine:database:drop -e test --force --no-interaction
-        		php bin/console doctrine:database:create --no-interaction
-        		php bin/console doctrine:database:create -e test --no-interaction
+			if [ "$APP_ENV" != 'prod' ]; then
+				echo "The databases will be drop if exist"
+
+				php bin/console doctrine:database:drop --force --no-interaction
+				php bin/console doctrine:database:create --no-interaction
+				echo "The database api was dropped"
+
+				if $(php bin/console doctrine:query:sql -q "SELECT 1" -e test); then
+					php bin/console doctrine:database:drop -e test --force --no-interaction
+					php bin/console doctrine:database:create -e test --no-interaction
+					php bin/console doctrine:migrations:migrate -e test --no-interaction
+					echo "The database api_test was dropped"
+				fi
+			fi
 		fi
 
 		if ls -A migrations/*.php >/dev/null 2>&1; then
 			php bin/console doctrine:migrations:migrate --no-interaction
-			php bin/console doctrine:migrations:migrate -e test --no-interaction
 		fi
 
 		if [ "$APP_ENV" != 'prod' ]; then
