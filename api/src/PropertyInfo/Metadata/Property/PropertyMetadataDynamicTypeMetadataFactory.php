@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @package
+ * @author  Lubo Grozdanov <grozdanov.lubo@gmail.com>
+ */
+
 declare(strict_types=1);
 
 namespace App\PropertyInfo\Metadata\Property;
@@ -8,12 +13,20 @@ use ApiPlatform\Core\Exception\ResourceClassNotFoundException;
 use ApiPlatform\Core\Metadata\Property\Factory\PropertyMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Property\PropertyMetadata;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
+use App\Entity\DynamicRelationInterface;
+use App\Util\DataProvider;
+use Symfony\Component\Config\Exception\LoaderLoadException;
 use Symfony\Component\PropertyInfo\Type;
 use Symfony\Component\Routing\Matcher\TraceableUrlMatcher;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 
+/**
+ * Class PropertyMetadataDynamicTypeMetadataFactory
+ *
+ * @package App\PropertyInfo\Metadata\Property
+ */
 final class PropertyMetadataDynamicTypeMetadataFactory implements PropertyMetadataFactoryInterface
 {
     private PropertyMetadataFactoryInterface $decorated;
@@ -22,42 +35,24 @@ final class PropertyMetadataDynamicTypeMetadataFactory implements PropertyMetada
 
     private ResourceMetadataFactoryInterface $resourceMetadataFactory;
 
-    private $object;
+    private DataProvider $dataProvider;
 
-    private array $normalizeContext = [];
-
-    private array $data = [];
-
-    private array $denormalizeContext = [];
-
-    public function __construct(PropertyMetadataFactoryInterface $decorated, RouterInterface $router, ResourceMetadataFactoryInterface $resourceMetadataFactory)
+    public function __construct(PropertyMetadataFactoryInterface $decorated, RouterInterface $router, ResourceMetadataFactoryInterface $resourceMetadataFactory, DataProvider $dataProvider)
     {
         $this->decorated = $decorated;
         $this->router = $router;
         $this->resourceMetadataFactory = $resourceMetadataFactory;
+        $this->dataProvider = $dataProvider;
     }
 
-    public function setObjectAndContext($object, array $context): void
+    public function create(string $resourceClass, string $property, array $options = []): PropertyMetadata
     {
-        $this->object = $object;
-        $this->normalizeContext = $context;
+        $propertyMetadata = $this->decorated->create($resourceClass, $property, $options);
+
+        return $this->updatePropertyMetadataType($propertyMetadata, $property, $resourceClass);
     }
 
-    public function setDataAndContext(array $data, array $context): void
-    {
-        $this->data = $data;
-        $this->denormalizeContext = $context;
-    }
-
-    public function create(string $resourceClass, string $name, array $options = []): PropertyMetadata
-    {
-        $propertyMetadata = $this->decorated->create($resourceClass, $name, $options);
-
-
-        return $this->updatePropertyMetadataType($propertyMetadata, $name, $resourceClass);
-    }
-
-    private function updatePropertyMetadataType(PropertyMetadata $propertyMetadata, $name, string $resourceClass): PropertyMetadata
+    private function updatePropertyMetadataType(PropertyMetadata $propertyMetadata, string $name, string $resourceClass): PropertyMetadata
     {
         /** @var \Symfony\Component\PropertyInfo\Type */
         $type = $propertyMetadata->getType();
@@ -65,15 +60,17 @@ final class PropertyMetadataDynamicTypeMetadataFactory implements PropertyMetada
         if ($type !== null && $type->getBuiltinType() === Type::BUILTIN_TYPE_OBJECT) {
             $reflectionClass = new \ReflectionClass($type->getClassName());
 
-            $operation = $this->normalizeContext['collection_operation_name'] ?? $this->normalizeContext['item_operation_name'] ?? $this->denormalizeContext['collection_operation_name'] ?? $this->denormalizeContext['item_operation_name'] ?? null;
+            $operation = $this->dataProvider->getNormalizeContext()['collection_operation_name'] ?? $this->dataProvider->getNormalizeContext()['item_operation_name'] ?? $this->dataProvider->getDenormalizeContext(
+                )['collection_operation_name'] ?? $this->dataProvider->getDenormalizeContext()['item_operation_name'] ?? null;
 
             if (
-                $reflectionClass->isAbstract() === true
+                $reflectionClass->implementsInterface(DynamicRelationInterface::class)
+                && $reflectionClass->isAbstract() === true
                 && $reflectionClass->isInterface() === false
             ) {
-                //documentation // deserialization //serialization
+                /* documentation | deserialization | serialization */
                 if ($operation === null) {
-                    $propertyMetadata = $this->onDocumentation($name, $propertyMetadata, $resourceClass);
+                    $propertyMetadata = $this->onDocumentation($propertyMetadata);
                 } elseif (strtolower($operation) !== 'get') {
                     $propertyMetadata = $this->onDeserialization($name, $propertyMetadata, $resourceClass);
                 } elseif (strtolower($operation) === 'get') {
@@ -87,19 +84,19 @@ final class PropertyMetadataDynamicTypeMetadataFactory implements PropertyMetada
 
     /**
      * When the API is called with GET HTTP Method (for Collection or single Item) we want somehow to dynamic to change Type of relation for properly serialization
-     * Let assume in RequestForProposal we have relation to AbstractStandardWorkflow, but there we can understand from what concrete type is AbstractStandardWorkflow from the workflow's property value
-     * Or with other words we change relation from abstract to concrete relay on property's value type
+     * The idea to change relation from abstract to concrete relay on property's value type
      */
     private function onSerialization(string $name, PropertyMetadata $propertyMetadata, string $resourceClass): PropertyMetadata
     {
         /** @var \Symfony\Component\PropertyInfo\Type */
         $type = $propertyMetadata->getType();
+        $object = $this->dataProvider->getObject();
 
-        if (method_exists($this->object, 'get'.$name)) {
-            $concreteRelation = $this->object->{'get'.$name}();
+        if ($object && method_exists($object, 'get'.$name)) {
+            $concreteRelation = $object->{'get'.$name}();
             if ($concreteRelation !== null) {
                 $concreteClass = get_class($concreteRelation);
-                $concreteType = new Type(Type::BUILTIN_TYPE_OBJECT, $type->isNullable(), $concreteClass);
+                $concreteType = new Type(Type::BUILTIN_TYPE_OBJECT, $type ? $type->isNullable() : false, $concreteClass);
                 $propertyMetadata = $propertyMetadata->withType($concreteType);
                 try {
                     $resourceMetadata = $this->resourceMetadataFactory->create($resourceClass);
@@ -107,7 +104,7 @@ final class PropertyMetadataDynamicTypeMetadataFactory implements PropertyMetada
                     if (isset($attributes[$name]['readableLink'])) {
                         $propertyMetadata = $propertyMetadata->withReadableLink($attributes[$name]['readableLink']);
                     }
-                } catch (ResourceClassNotFoundException $exception) {
+                } catch (ResourceClassNotFoundException) {
                     // just skip
                 }
             }
@@ -121,7 +118,7 @@ final class PropertyMetadataDynamicTypeMetadataFactory implements PropertyMetada
      *
      * ON PUT: First checking if there is already set relation an if there is we use this concrete type
      *
-     * ON POST: Let assume in RequestForProposal we have relation to AbstractStandardWorkflow, but there we can understand from what concrete type is AbstractStandardWorkflow from the IRI in workflow's property value that is send from customer
+     * ON POST: Let assume we have relation to AbstractRelation, but there we can understand from what concrete type is AbstractRelation from the IRI that is passed from customer
      * Or with other words we change relation from abstract to concrete relay on property's IRI that comes from outside
      *
      */
@@ -131,7 +128,7 @@ final class PropertyMetadataDynamicTypeMetadataFactory implements PropertyMetada
         $type = $propertyMetadata->getType();
 
         // On PUT HTTP Request we relay on already set relation object first
-        $objectToPopulate = $this->denormalizeContext[AbstractObjectNormalizer::OBJECT_TO_POPULATE] ?? null;
+        $objectToPopulate = $this->dataProvider->getDenormalizeContext()[AbstractObjectNormalizer::OBJECT_TO_POPULATE] ?? null;
 
         if ($objectToPopulate !== null) {
             if (method_exists($objectToPopulate, 'get'.$name)) {
@@ -139,7 +136,7 @@ final class PropertyMetadataDynamicTypeMetadataFactory implements PropertyMetada
                 if ($concreteRelation !== null) {
                     $concreteClass = get_class($concreteRelation);
 
-                    $concreteType = new Type(Type::BUILTIN_TYPE_OBJECT, $type->isNullable(), $concreteClass);
+                    $concreteType = new Type(Type::BUILTIN_TYPE_OBJECT, $type ? $type->isNullable() : false, $concreteClass);
                     $propertyMetadata = $propertyMetadata->withType($concreteType);
                     try {
                         $resourceMetadata = $this->resourceMetadataFactory->create($resourceClass);
@@ -147,7 +144,7 @@ final class PropertyMetadataDynamicTypeMetadataFactory implements PropertyMetada
                         if (isset($attributes[$name]['readableLink'])) {
                             $propertyMetadata = $propertyMetadata->withReadableLink($attributes[$name]['readableLink']);
                         }
-                    } catch (ResourceClassNotFoundException $exception) {
+                    } catch (ResourceClassNotFoundException) {
                         // just skip
                     }
                 }
@@ -156,7 +153,8 @@ final class PropertyMetadataDynamicTypeMetadataFactory implements PropertyMetada
             return $propertyMetadata;
         }
 
-        if (isset($this->data[$name]) === true) {
+        // On POST HTTP Request we understand how to change property type from passed iri
+        if (isset($this->dataProvider->getData()[$name]) === true) {
             $concreteClass = null;
             try {
                 $context = $this->router->getContext();
@@ -164,26 +162,22 @@ final class PropertyMetadataDynamicTypeMetadataFactory implements PropertyMetada
                 $routeCollection = $this->router->getRouteCollection();
                 $matcher = new TraceableUrlMatcher($routeCollection, $context);
                 /** @var \Symfony\Component\Routing\Route */
-                $apiRouteInfo = $matcher->match($this->data[$name]);
+                $apiRouteInfo = $matcher->match($this->dataProvider->getData()[$name]);
                 $concreteClass = $apiRouteInfo['_api_resource_class'] ?? null;
-            } catch (\Exception $exception) {
-                throw new UnexpectedValueException(sprintf('Invalid IRI "%s".', $this->data[$name]));
-            }
 
-            if ($concreteClass !== null && is_subclass_of($concreteClass, $type->getClassName())) {
-                $concreteType = new Type(Type::BUILTIN_TYPE_OBJECT, $type->isNullable(), $concreteClass);
-                $propertyMetadata = $propertyMetadata->withType($concreteType);
-                try {
+                if ($concreteClass !== null && is_subclass_of($concreteClass, $type->getClassName())) {
+                    $concreteType = new Type(Type::BUILTIN_TYPE_OBJECT, $type->isNullable(), $concreteClass);
+                    $propertyMetadata = $propertyMetadata->withType($concreteType);
                     $resourceMetadata = $this->resourceMetadataFactory->create($resourceClass);
                     $attributes = $resourceMetadata->getAttributes();
                     if (isset($attributes[$name]['readableLink'])) {
                         $propertyMetadata = $propertyMetadata->withReadableLink($attributes[$name]['readableLink']);
                     }
-                } catch (ResourceClassNotFoundException $exception) {
-                    // just skip
                 }
-            } else {
-                throw new UnexpectedValueException(sprintf('Invalid IRI "%s".', $this->data[$name]));
+            } catch (LoaderLoadException | ResourceClassNotFoundException) {
+                // just skip
+            } catch (\Exception) {
+                throw new UnexpectedValueException(sprintf('Invalid IRI "%s".', $this->dataProvider->getData()[$name]));
             }
         }
 
@@ -191,18 +185,12 @@ final class PropertyMetadataDynamicTypeMetadataFactory implements PropertyMetada
     }
 
     /**
-     * TODO: Currently not implemented: Here the idea is somehow on documentation to change type from AbstractStandardWorkflow to not be showed
-     * TODO: like embedded object in RequestForProposal {}, but to be showed like "string" (from embedded object to IRI only)
+     * Here the idea is somehow on documentation to change type from { } to be showed like "string <iri-reference>"
      */
-    private function onDocumentation(string $name, PropertyMetadata $propertyMetadata, string $resourceClass): PropertyMetadata
+    private function onDocumentation(PropertyMetadata $propertyMetadata): PropertyMetadata
     {
-//        $resourceMetadata = $this->resourceMetadataFactory->create($resourceClass);
-//        $attributes = $resourceMetadata->getAttributes();
-//        if (isset($attributes[$name]['writableLink']) && $attributes[$name]['writableLink'] === true) {
-//            $propertyMetadata = $propertyMetadata->withWritableLink(true);
-//        } else {
-//            $propertyMetadata = $propertyMetadata->withWritableLink(false);
-//        }
+        $concreteType = new Type(Type::BUILTIN_TYPE_STRING);
+        $propertyMetadata = $propertyMetadata->withType($concreteType)->withSchema(['type' => 'string', 'format' => 'iri-reference',]);
 
         return $propertyMetadata;
     }

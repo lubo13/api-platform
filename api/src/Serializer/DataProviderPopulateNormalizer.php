@@ -1,11 +1,16 @@
 <?php
 
+/**
+ * @package
+ * @author  Lubo Grozdanov <grozdanov.lubo@gmail.com>
+ */
+
 declare(strict_types=1);
 
 namespace App\Serializer;
 
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Paginator;
-use App\PropertyInfo\Metadata\Property\PropertyMetadataDynamicTypeMetadataFactory;
+use App\Util\DataProvider;
 use Symfony\Component\Serializer\Normalizer\ContextAwareDenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\ContextAwareNormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\DenormalizerAwareInterface;
@@ -17,7 +22,7 @@ use Symfony\Component\Serializer\Normalizer\NormalizerAwareTrait;
  * This normalizer only set data that we need to change Dynamic Relation Type
  * Just see \App\PropertyInfo\Metadata\Property\PropertyMetadataDynamicTypeMetadataFactory
  */
-class GenericNormalizer implements ContextAwareDenormalizerInterface, DenormalizerAwareInterface, ContextAwareNormalizerInterface, NormalizerAwareInterface
+class DataProviderPopulateNormalizer implements ContextAwareDenormalizerInterface, DenormalizerAwareInterface, ContextAwareNormalizerInterface, NormalizerAwareInterface
 {
     use DenormalizerAwareTrait;
     use NormalizerAwareTrait;
@@ -25,13 +30,16 @@ class GenericNormalizer implements ContextAwareDenormalizerInterface, Denormaliz
     private const NORMALIZER_ALREADY_CALLED = 'generic_normalizer_already_called';
     private const DENORMALIZER_ALREADY_CALLED = 'generic_denormalizer_already_called';
 
-    private PropertyMetadataDynamicTypeMetadataFactory $dynamicTypeMetadataFactory;
+    private DataProvider $dataProvider;
 
-    public function __construct(PropertyMetadataDynamicTypeMetadataFactory $dynamicTypeMetadataFactory)
+    public function __construct(DataProvider $dataProvider)
     {
-        $this->dynamicTypeMetadataFactory = $dynamicTypeMetadataFactory;
+        $this->dataProvider = $dataProvider;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function supportsNormalization($data, $format = null, array $context = []): bool
     {
         if (isset($context[self::DENORMALIZER_ALREADY_CALLED])) {
@@ -41,20 +49,32 @@ class GenericNormalizer implements ContextAwareDenormalizerInterface, Denormaliz
         return true;
     }
 
-    public function normalize($object, $format = null, array $context = [])
+
+    /**
+     * @inheritDoc
+     */
+    public function normalize($object, $format = null, array $context = []): array
     {
         $context[self::DENORMALIZER_ALREADY_CALLED] = true;
 
         $obj = $object;
         if ($object instanceof Paginator && $object->count() > 0) {
-            $obj = $object->getIterator()[0];
+            try {
+                $obj = $object->getIterator()[0];
+            } catch (\Exception) {
+            }
         }
-        $this->dynamicTypeMetadataFactory->setObjectAndContext($obj, $context);
+
+        $this->dataProvider->setObject($obj);
+        $this->dataProvider->setNormalizeContext($context);
 
         return $this->normalizer->normalize($object, $format, $context);
     }
 
 
+    /**
+     * @inheritDoc
+     */
     public function supportsDenormalization($data, $type, $format = null, array $context = []): bool
     {
         if (isset($context[self::DENORMALIZER_ALREADY_CALLED])) {
@@ -64,11 +84,16 @@ class GenericNormalizer implements ContextAwareDenormalizerInterface, Denormaliz
         return true;
     }
 
+
+    /**
+     * @inheritDoc
+     */
     public function denormalize($data, $type, $format = null, array $context = [])
     {
         $context[self::DENORMALIZER_ALREADY_CALLED] = true;
 
-        $this->dynamicTypeMetadataFactory->setDataAndContext($data, $context);
+        $this->dataProvider->setData($data);
+        $this->dataProvider->setDenormalizeContext($context);
 
         return $this->denormalizer->denormalize($data, $type, $format, $context);
     }

@@ -1,0 +1,30 @@
+App\Entity\Service\ServiceStation:
+    service_station_1:
+        name: "Service Station 1"
+        workingTimeStart: <numberBetween(7, 10)>:00
+        workingTimeEnd: <numberBetween(18, 20)>:00
+        roadsideAssistance: <numberBetween(0, 1)>
+        freeDiagnostic: <numberBetween(0, 1)>
+        expressService: <numberBetween(0, 1)>
+    service_station_2:
+        name: "Service Station 2"
+        workingTimeStart: <numberBetween(7, 10)>:00
+        workingTimeEnd: <numberBetween(18, 20)>:00
+        roadsideAssistance: <numberBetween(0, 1)>
+        freeDiagnostic: <numberBetween(0, 1)>
+        expressService: <numberBetween(0, 1)>
+    service_station_3:
+        name: "Service Station 3"
+        workingTimeStart: <numberBetween(7, 10)>:00
+        workingTimeEnd: <numberBetween(18, 20)>:00
+        roadsideAssistance: <numberBetween(0, 1)>
+        freeDiagnostic: <numberBetween(0, 1)>
+        expressService: <numberBetween(0, 1)>
+    service_station_4:
+        name: "Service Station 4"
+        workingTimeStart: <numberBetween(7, 10)>:00
+        workingTimeEnd: <numberBetween(18, 20)>:00
+        roadsideAssistance: <numberBetween(0, 1)>
+        freeDiagnostic: <numberBetween(0, 1)>
+        expressService: <numberBetween(0, 1)>
+    

@@ -1,0 +1,26 @@
+App\Entity\Service\Carwash:
+    carwash_1:
+        name: "Carwash 1"
+        workingTimeStart: <numberBetween(7, 10)>:00
+        workingTimeEnd: <numberBetween(18, 20)>:00
+        vehicleCapacity: <numberBetween(10, 20)>
+        coffeeShop: <numberBetween(0, 1)>
+    carwash_2:
+        name: "Carwash 2"
+        workingTimeStart: <numberBetween(7, 10)>:00
+        workingTimeEnd: <numberBetween(18, 20)>:00
+        vehicleCapacity: <numberBetween(10, 20)>
+        coffeeShop: <numberBetween(0, 1)>
+    carwash_3:
+        name: "Carwash 3"
+        workingTimeStart: <numberBetween(7, 10)>:00
+        workingTimeEnd: <numberBetween(18, 20)>:00
+        vehicleCapacity: <numberBetween(10, 20)>
+        coffeeShop: <numberBetween(0, 1)>
+    carwash_4:
+        name: "Carwash 4"
+        workingTimeStart: <numberBetween(7, 10)>:00
+        workingTimeEnd: <numberBetween(18, 20)>:00
+        vehicleCapacity: <numberBetween(10, 20)>
+        coffeeShop: <numberBetween(0, 1)>
+    

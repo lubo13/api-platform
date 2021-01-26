@@ -1,0 +1,10 @@
+App\Entity\Vehicle\Bus:
+    bus_1:
+        tradeMark: Mercedes
+        model: Veto
+    bus_2:
+        tradeMark: Peugeot
+        model: Boxer
+    bus_3:
+        tradeMark: Renault
+        model: Master

@@ -1,0 +1,25 @@
+App\Entity\Service\TireShop:
+    tire_shop_1:
+        name: "Tire Shop 1"
+        workingTimeStart: <numberBetween(7, 10)>:00
+        workingTimeEnd: <numberBetween(18, 20)>:00
+        vehicleCapacity:  <numberBetween(10, 20)>
+        coffeeShop: <numberBetween(0, 1)>
+    tire_shop_2:
+        name: "Tire Shop 2"
+        workingTimeStart: <numberBetween(7, 10)>:00
+        workingTimeEnd: <numberBetween(18, 20)>:00
+        vehicleCapacity:  <numberBetween(10, 20)>
+        coffeeShop: <numberBetween(0, 1)>
+    tire_shop_3:
+        name: "Tire Shop 3"
+        workingTimeStart: <numberBetween(7, 10)>:00
+        workingTimeEnd: <numberBetween(18, 20)>:00
+        vehicleCapacity:  <numberBetween(10, 20)>
+        coffeeShop: <numberBetween(0, 1)>
+    tire_shop_4:
+        name: "Tire Shop 4"
+        workingTimeStart: <numberBetween(7, 10)>:00
+        workingTimeEnd: <numberBetween(18, 20)>:00
+        vehicleCapacity:  <numberBetween(10, 20)>
+        coffeeShop: <numberBetween(0, 1)>

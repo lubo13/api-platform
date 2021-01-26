@@ -1,0 +1,10 @@
+App\Entity\Vehicle\Jeep:
+    jeep_1:
+        tradeMark: Mercedes
+        model: GLK
+    jeep_2:
+        tradeMark: BMW
+        model: X5
+    jeep_3:
+        tradeMark: Audi
+        model: Q6

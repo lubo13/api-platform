@@ -1,0 +1,10 @@
+App\Entity\Vehicle\Car:
+    car_1:
+        tradeMark: Mercedes
+        model: S-class
+    car_2:
+        tradeMark: BMW
+        model: 520
+    car_3:
+        tradeMark: Audi
+        model: S6

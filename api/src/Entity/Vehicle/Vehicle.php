@@ -2,6 +2,7 @@
 
 namespace App\Entity\Vehicle;
 
+use App\Entity\DynamicRelationInterface;
 use App\Entity\Schedule\Schedule;
 use App\Repository\VehicleRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -17,7 +18,7 @@ use Doctrine\ORM\Mapping\DiscriminatorMap;
  * @DiscriminatorMap({"car" = "Car", "jeep" = "Jeep", "bus" = "Bus", "truck" = "Truck"})
  * @ORM\Table(name="vehicle")
  */
-abstract class Vehicle
+abstract class Vehicle implements DynamicRelationInterface
 {
     /**
      * @ORM\Id

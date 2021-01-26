@@ -1,0 +1,10 @@
+App\Entity\Vehicle\Truck:
+    truck_1:
+        tradeMark: Mercedes
+        model: Actros
+    truck_2:
+        tradeMark: Scania
+        model: P380
+    truck_3:
+        tradeMark: Renault
+        model: Magnum

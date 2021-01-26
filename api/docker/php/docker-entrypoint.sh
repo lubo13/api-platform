@@ -18,7 +18,7 @@ if [ "$1" = 'php-fpm' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 	setfacl -dR -m u:www-data:rwX -m u:"$(whoami)":rwX var
 
 	if [ "$APP_ENV" != 'prod' ]; then
-		composer install --prefer-dist --no-progress --no-interaction
+		composer install --prefer-dist --no-progress --no-interaction --ignore-platform-reqs
 	fi
 
 	if grep -q DATABASE_URL= .env; then
@@ -43,8 +43,20 @@ if [ "$1" = 'php-fpm' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 			echo "The database is now ready and reachable"
 		fi
 
+		if [ "$APP_ENV" != 'prod' ]; then
+        		php bin/console doctrine:database:drop --force --no-interaction
+        		php bin/console doctrine:database:drop -e test --force --no-interaction
+        		php bin/console doctrine:database:create --no-interaction
+        		php bin/console doctrine:database:create -e test --no-interaction
+		fi
+
 		if ls -A migrations/*.php >/dev/null 2>&1; then
 			php bin/console doctrine:migrations:migrate --no-interaction
+			php bin/console doctrine:migrations:migrate -e test --no-interaction
+		fi
+
+		if [ "$APP_ENV" != 'prod' ]; then
+        		php bin/console haute:fixture:load --no-interaction
 		fi
 	fi
 fi

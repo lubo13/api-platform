@@ -1,0 +1,49 @@
+App\Entity\Schedule\Schedule:
+    schedule_service_carwash_bus_{1..10}:
+        datetime: '<dateTimeBetween("-200 days", "now")>'
+        vehicle: '@bus_*'
+        service: '@carwash_*'
+    schedule_service_carwash_car_{1..10}:
+        datetime: '<dateTimeBetween("-200 days", "now")>'
+        vehicle: '@car_*'
+        service: '@carwash_*'
+    schedule_service_carwash_jeep_{1..10}:
+        datetime: '<dateTimeBetween("-200 days", "now")>'
+        vehicle: '@jeep_*'
+        service: '@carwash_*'
+    schedule_service_carwash_truck_{1..10}:
+        datetime: '<dateTimeBetween("-200 days", "now")>'
+        vehicle: '@truck_*'
+        service: '@carwash_*'
+    schedule_service_tire_shop_bus_{1..10}:
+        datetime: '<dateTimeBetween("-200 days", "now")>'
+        vehicle: '@bus_*'
+        service: '@tire_shop_*'
+    schedule_service_tire_shop_car_{1..10}:
+        datetime: '<dateTimeBetween("-200 days", "now")>'
+        vehicle: '@car_*'
+        service: '@tire_shop_*'
+    schedule_service_tire_shop_jeep_{1..10}:
+        datetime: '<dateTimeBetween("-200 days", "now")>'
+        vehicle: '@jeep_*'
+        service: '@tire_shop_*'
+    schedule_service_tire_shop_truck_{1..10}:
+        datetime: '<dateTimeBetween("-200 days", "now")>'
+        vehicle: '@truck_*'
+        service: '@tire_shop_*'
+    schedule_service_service_station_bus_{1..10}:
+        datetime: '<dateTimeBetween("-200 days", "now")>'
+        vehicle: '@bus_*'
+        service: '@service_station_*'
+    schedule_service_service_station_car_{1..10}:
+        datetime: '<dateTimeBetween("-200 days", "now")>'
+        vehicle: '@car_*'
+        service: '@service_station_*'
+    schedule_service_service_station_jeep_{1..10}:
+        datetime: '<dateTimeBetween("-200 days", "now")>'
+        vehicle: '@jeep_*'
+        service: '@service_station_*'
+    schedule_service_service_station_truck_{1..10}:
+        datetime: '<dateTimeBetween("-200 days", "now")>'
+        vehicle: '@truck_*'
+        service: '@service_station_*'

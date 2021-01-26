@@ -2,6 +2,7 @@
 
 namespace App\Entity\Service;
 
+use App\Entity\DynamicRelationInterface;
 use App\Entity\Schedule\Schedule;
 use App\Repository\ServiceRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -18,7 +19,7 @@ use Doctrine\ORM\Mapping\InheritanceType;
  * @DiscriminatorMap({"carwash" = "Carwash", "service_station" = "ServiceStation", "tire_shop" = "TireShop"})
  * @ORM\Table(name="service")
  */
-abstract class Service
+abstract class Service implements DynamicRelationInterface
 {
     /**
      * @ORM\Id
@@ -28,14 +29,19 @@ abstract class Service
     private int $id;
 
     /**
-     * @ORM\Column(type="datetime")
+     * @ORM\Column(type="string", unique=true)
      */
-    private \DateTimeInterface $workingTimeStart;
+    private string $name;
 
     /**
-     * @ORM\Column(type="datetime")
+     * @ORM\Column(type="string")
      */
-    private \DateTimeInterface $workingTimeEnd;
+    private string $workingTimeStart;
+
+    /**
+     * @ORM\Column(type="string")
+     */
+    private string $workingTimeEnd;
 
     /**
      * @ORM\OneToMany(targetEntity=Schedule::class, mappedBy="service")
@@ -47,27 +53,37 @@ abstract class Service
         $this->schedules = new ArrayCollection();
     }
 
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getWorkingTimeStart(): \DateTimeInterface
+    public function getWorkingTimeStart(): string
     {
         return $this->workingTimeStart;
     }
 
-    public function setWorkingTimeStart(\DateTimeInterface $workingTimeStart): void
+    public function setWorkingTimeStart(string $workingTimeStart): void
     {
         $this->workingTimeStart = $workingTimeStart;
     }
 
-    public function getWorkingTimeEnd(): \DateTimeInterface
+    public function getWorkingTimeEnd(): string
     {
         return $this->workingTimeEnd;
     }
 
-    public function setWorkingTimeEnd(\DateTimeInterface $workingTimeEnd): void
+    public function setName(string $name): void
+    {
+        $this->name = $name;
+    }
+
+    public function setWorkingTimeEnd(string $workingTimeEnd): void
     {
         $this->workingTimeEnd = $workingTimeEnd;
     }
