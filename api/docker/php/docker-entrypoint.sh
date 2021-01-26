@@ -48,14 +48,15 @@ if [ "$1" = 'php-fpm' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 				php bin/console doctrine:database:drop --force --no-interaction
 				php bin/console doctrine:database:create --no-interaction
 				echo "The database api was dropped"
-
-				if $(php bin/console doctrine:query:sql -q "SELECT 1" -e test); then
-					php bin/console doctrine:database:drop -e test --force --no-interaction
-					php bin/console doctrine:database:create -e test --no-interaction
-					php bin/console doctrine:migrations:migrate -e test --no-interaction
-					echo "The database api_test was dropped"
-				fi
 			fi
+
+			if $(php bin/console doctrine:query:sql -q "SELECT 1" -e test); then
+				php bin/console doctrine:database:drop -e test --force --no-interaction
+				echo "The database api_test was dropped"
+			fi
+				php bin/console doctrine:database:create -e test --no-interaction
+				php bin/console doctrine:migrations:migrate -e test --no-interaction
+				echo "The database api_test was created"
 		fi
 
 		if ls -A migrations/*.php >/dev/null 2>&1; then
