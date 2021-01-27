@@ -21,6 +21,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *         "get",
  *         "put",
  *         "patch",
+ *         "delete",
  *     }
  *  )
  * @ORM\Entity(repositoryClass=ScheduleRepository::class)

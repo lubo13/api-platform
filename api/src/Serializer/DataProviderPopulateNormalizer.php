@@ -53,7 +53,7 @@ class DataProviderPopulateNormalizer implements ContextAwareDenormalizerInterfac
     /**
      * @inheritDoc
      */
-    public function normalize($object, $format = null, array $context = []): array
+    public function normalize($object, $format = null, array $context = []): ?array
     {
         $context[self::DENORMALIZER_ALREADY_CALLED] = true;
 
