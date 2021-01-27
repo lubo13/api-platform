@@ -20,6 +20,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *     itemOperations={
  *         "get",
  *         "put",
+ *         "patch",
  *     }
  *  )
  * @ORM\Entity(repositoryClass=ScheduleRepository::class)

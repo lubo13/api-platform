@@ -26,7 +26,7 @@ class PostScheduleTest extends ApiTestCase
     /**
      * @dataProvider provideData()
      */
-    public function testCreateScheduleSucceeds($data): void
+    public function testPostScheduleSucceeds($data): void
     {
         $serviceIri = $this->findIriBy(Service::class, ['name' => $data['service']]);
         $vehicleIri = $this->findIriBy(Vehicle::class, ['model' => $data['vehicle']]);

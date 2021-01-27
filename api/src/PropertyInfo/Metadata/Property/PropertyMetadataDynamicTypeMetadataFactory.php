@@ -68,13 +68,13 @@ final class PropertyMetadataDynamicTypeMetadataFactory implements PropertyMetada
                 && $reflectionClass->isAbstract() === true
                 && $reflectionClass->isInterface() === false
             ) {
-                /* documentation | deserialization | serialization */
+                /* documentation | serialization | deserialization */
                 if ($operation === null) {
-                    $propertyMetadata = $this->onDocumentation($propertyMetadata);
-                } elseif (strtolower($operation) !== 'get') {
-                    $propertyMetadata = $this->onDeserialization($name, $propertyMetadata, $resourceClass);
+                    $propertyMetadata = $this->onMissingOperation($propertyMetadata);
                 } elseif (strtolower($operation) === 'get') {
-                    $propertyMetadata = $this->onSerialization($name, $propertyMetadata, $resourceClass);
+                    $propertyMetadata = $this->onGetOperation($name, $propertyMetadata, $resourceClass);
+                } elseif (strtolower($operation) !== 'get') {
+                    $propertyMetadata = $this->onOtherOperation($name, $propertyMetadata, $resourceClass);
                 }
             }
         }
@@ -83,10 +83,10 @@ final class PropertyMetadataDynamicTypeMetadataFactory implements PropertyMetada
     }
 
     /**
-     * When the API is called with GET HTTP Method (for Collection or single Item) we want somehow to dynamic to change Type of relation for properly serialization
+     * When the API is called with GET HTTP Method (for Collection or single Item) we want somehow dynamically to change PropertyMetadata's Type of relation for properly serialization
      * The idea to change relation from abstract to concrete relay on property's value type
      */
-    private function onSerialization(string $name, PropertyMetadata $propertyMetadata, string $resourceClass): PropertyMetadata
+    private function onGetOperation(string $name, PropertyMetadata $propertyMetadata, string $resourceClass): PropertyMetadata
     {
         /** @var \Symfony\Component\PropertyInfo\Type */
         $type = $propertyMetadata->getType();
@@ -114,46 +114,17 @@ final class PropertyMetadataDynamicTypeMetadataFactory implements PropertyMetada
     }
 
     /**
-     * When the API is called with other than GET HTTP Method (for Collection or single Item) we want somehow to dynamic to change Type of relation for properly deserialization
+     * When the API is called with other than GET HTTP Method we want somehow dynamically to change PropertyMetadata's Type of relation for properly deserialization
      *
-     * ON PUT: First checking if there is already set relation an if there is we use this concrete type
-     *
-     * ON POST: Let assume we have relation to AbstractRelation, but there we can understand from what concrete type is AbstractRelation from the IRI that is passed from customer
+     * Let assume we have relation to AbstractRelation, but there we can understand to what concrete type to change AbstractRelation from the IRI that is passed from customer
      * Or with other words we change relation from abstract to concrete relay on property's IRI that comes from outside
      *
      */
-    private function onDeserialization(string $name, PropertyMetadata $propertyMetadata, string $resourceClass): PropertyMetadata
+    private function onOtherOperation(string $name, PropertyMetadata $propertyMetadata, string $resourceClass): PropertyMetadata
     {
         /** @var \Symfony\Component\PropertyInfo\Type */
         $type = $propertyMetadata->getType();
 
-        // On PUT HTTP Request we relay on already set relation object first
-        $objectToPopulate = $this->dataProvider->getDenormalizeContext()[AbstractObjectNormalizer::OBJECT_TO_POPULATE] ?? null;
-
-        if ($objectToPopulate !== null) {
-            if (method_exists($objectToPopulate, 'get'.$name)) {
-                $concreteRelation = $objectToPopulate->{'get'.$name}();
-                if ($concreteRelation !== null) {
-                    $concreteClass = get_class($concreteRelation);
-
-                    $concreteType = new Type(Type::BUILTIN_TYPE_OBJECT, $type ? $type->isNullable() : false, $concreteClass);
-                    $propertyMetadata = $propertyMetadata->withType($concreteType);
-                    try {
-                        $resourceMetadata = $this->resourceMetadataFactory->create($resourceClass);
-                        $attributes = $resourceMetadata->getAttributes();
-                        if (isset($attributes[$name]['readableLink'])) {
-                            $propertyMetadata = $propertyMetadata->withReadableLink($attributes[$name]['readableLink']);
-                        }
-                    } catch (ResourceClassNotFoundException) {
-                        // just skip
-                    }
-                }
-            }
-
-            return $propertyMetadata;
-        }
-
-        // On POST HTTP Request we understand how to change property type from passed iri
         if (isset($this->dataProvider->getData()[$name]) === true) {
             $concreteClass = null;
             try {
@@ -179,15 +150,40 @@ final class PropertyMetadataDynamicTypeMetadataFactory implements PropertyMetada
             } catch (\Exception) {
                 throw new UnexpectedValueException(sprintf('Invalid IRI "%s".', $this->dataProvider->getData()[$name]));
             }
+        } else {
+            $objectToPopulate = $this->dataProvider->getDenormalizeContext()[AbstractObjectNormalizer::OBJECT_TO_POPULATE] ?? null;
+
+            if ($objectToPopulate !== null) {
+                if (method_exists($objectToPopulate, 'get'.$name)) {
+                    $concreteRelation = $objectToPopulate->{'get'.$name}();
+                    if ($concreteRelation !== null) {
+                        $concreteClass = get_class($concreteRelation);
+
+                        $concreteType = new Type(Type::BUILTIN_TYPE_OBJECT, $type ? $type->isNullable() : false, $concreteClass);
+                        $propertyMetadata = $propertyMetadata->withType($concreteType);
+                        try {
+                            $resourceMetadata = $this->resourceMetadataFactory->create($resourceClass);
+                            $attributes = $resourceMetadata->getAttributes();
+                            if (isset($attributes[$name]['readableLink'])) {
+                                $propertyMetadata = $propertyMetadata->withReadableLink($attributes[$name]['readableLink']);
+                            }
+                        } catch (ResourceClassNotFoundException) {
+                            // just skip
+                        }
+                    }
+                }
+            }
         }
 
         return $propertyMetadata;
     }
 
     /**
-     * Here the idea is somehow on documentation to change type from { } to be showed like "string <iri-reference>"
+     * For Documentation purpose
+     *
+     * Here the idea is somehow on documentation to change PropertyMetadata's Type from { } to be showed like "string <iri-reference>"
      */
-    private function onDocumentation(PropertyMetadata $propertyMetadata): PropertyMetadata
+    private function onMissingOperation(PropertyMetadata $propertyMetadata): PropertyMetadata
     {
         $concreteType = new Type(Type::BUILTIN_TYPE_STRING);
         $propertyMetadata = $propertyMetadata->withType($concreteType)->withSchema(['type' => 'string', 'format' => 'iri-reference',]);
